@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PayFlow — Razorpay Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c26;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --accent: #4f6ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #f0f0f5;
+      --muted: #8888a0;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(12px);
+    }
+    .logo { font-family: var(--font-head); font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .tab-btn {
+      background: transparent; border: 1px solid transparent;
+      color: var(--muted); font-family: var(--font-body); font-size: 13px;
+      padding: 7px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--text); border-color: var(--border2); }
+    .tab-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 8px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── MAIN LAYOUT ── */
+    main { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+
+    /* ── SECTION TABS ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 40px 0 48px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(79,110,247,0.12); border: 1px solid rgba(79,110,247,0.3);
+      color: #8ba4ff; font-size: 12px; padding: 5px 12px; border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 { font-family: var(--font-head); font-size: clamp(32px,6vw,52px); font-weight: 700; line-height: 1.1; margin-bottom: 12px; }
+    .hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: var(--muted); font-size: 16px; line-height: 1.6; }
+
+    /* ── PAYMENT CARD ── */
+    .pay-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .pay-card h2 { font-family: var(--font-head); font-size: 20px; font-weight: 600; margin-bottom: 28px; }
+
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    input, textarea, select {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: var(--font-body); font-size: 15px;
+      padding: 13px 16px; outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--muted); }
+
+    .amount-input-wrapper { position: relative; }
+    .amount-input-wrapper .currency { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; }
+    .amount-input-wrapper input { padding-left: 34px; }
+
+    .quick-amounts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .quick-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); font-size: 12px; padding: 5px 12px;
+      border-radius: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .pay-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 12px; color: #fff;
+      font-family: var(--font-head); font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: transform 0.15s, opacity 0.15s;
+      margin-top: 8px;
+    }
+    .pay-btn:hover { transform: translateY(-1px); opacity: 0.92; }
+    .pay-btn:active { transform: translateY(0); }
+    .pay-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .secure-note { text-align: center; margin-top: 14px; color: var(--muted); font-size: 12px; }
+    .secure-note span { color: var(--green); }
+
+    /* ── SUCCESS TOAST ── */
+    #toast {
+      position: fixed; bottom: 30px; right: 30px;
+      background: #0f2318; border: 1px solid #22c55e44;
+      border-radius: 12px; padding: 14px 20px;
+      display: flex; align-items: center; gap: 12px;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.3s ease; z-index: 999;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    .toast-icon { width: 32px; height: 32px; background: rgba(34,197,94,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .toast-title { font-size: 14px; font-weight: 500; color: var(--green); }
+    .toast-sub { font-size: 12px; color: var(--muted); }
+
+    /* ── HISTORY TABLE ── */
+    .history-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .history-header h2 { font-family: var(--font-head); font-size: 24px; font-weight: 700; }
+    .refresh-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); font-size: 13px; padding: 8px 16px;
+      border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    }
+    .refresh-btn:hover { color: var(--text); border-color: var(--border2); }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .stat-value { font-family: var(--font-head); font-size: 24px; font-weight: 700; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.blue { color: var(--accent); }
+
+    .table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 14px 20px; text-align: left;
+      font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border); font-weight: 500;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 16px 20px; font-size: 14px; }
+    .td-id { font-family: monospace; font-size: 12px; color: var(--muted); }
+    .td-amount { font-family: var(--font-head); font-weight: 600; font-size: 16px; color: var(--green); }
+    .td-name { font-weight: 500; }
+    .td-desc { color: var(--muted); font-size: 13px; }
+    .badge-success {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25);
+      color: var(--green); font-size: 11px; padding: 3px 10px; border-radius: 20px;
+    }
+    .td-date { color: var(--muted); font-size: 12px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── SETUP GUIDE ── */
+    .guide-grid { display: grid; gap: 16px; }
+    .guide-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      display: flex; gap: 18px; align-items: flex-start;
+    }
+    .guide-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head); font-size: 14px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .guide-content h3 { font-family: var(--font-head); font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .guide-content p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .code { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 12px; color: #8ba4ff; margin-top: 10px; line-height: 1.7; }
+    .guide-link { color: var(--accent); text-decoration: none; font-size: 13px; display: inline-block; margin-top: 8px; }
+    .guide-link:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      nav { padding: 14px 20px; }
+      main { padding: 24px 16px; }
+      .stats-row { grid-template-columns: 1fr; }
+      thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="logo">Pay<span>Flow</span></div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showSection('pay')">Pay</button>
+    <button class="tab-btn" onclick="showSection('history')">History</button>
+    <button class="tab-btn" onclick="showSection('setup')">Setup Guide</button>
+  </div>
+  <div style="font-size:13px; color: var(--muted);">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">Checking...</span>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- PAY SECTION -->
+  <section class="section active" id="section-pay">
+    <div class="hero">
+      <div class="hero-badge">⚡ Razorpay Integration Demo</div>
+      <h1>Scan QR &amp; <em>Pay Instantly</em><br/>with Any UPI App</h1>
+      <p>Works with GPay, PhonePe, Paytm, BHIM — just scan &amp; pay</p>
+    </div>
+
+    <div class="pay-card">
+      <h2>New Payment</h2>
+
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="payer-name" placeholder="e.g. Ravi Kumar" />
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="pay-desc" placeholder="e.g. Product purchase, Donation..." />
+      </div>
+
+      <div class="form-group">
+        <label>Amount (₹)</label>
+        <div class="amount-input-wrapper">
+          <span class="currency">₹</span>
+          <input type="number" id="pay-amount" placeholder="100" min="1" />
+        </div>
+        <div class="quick-amounts">
+          <button class="quick-btn" onclick="setAmount(50)">₹50</button>
+          <button class="quick-btn" onclick="setAmount(100)">₹100</button>
+          <button class="quick-btn" onclick="setAmount(500)">₹500</button>
+          <button class="quick-btn" onclick="setAmount(1000)">₹1000</button>
+        </div>
+      </div>
+
+      <button class="pay-btn" id="pay-btn" onclick="initiatePayment()">
+        Show UPI QR Code to Pay
+      </button>
+      <p class="secure-note"><span>🔒 Secured</span> by Razorpay — PCI DSS Compliant</p>
+    </div>
+  </section>
+
+  <!-- HISTORY SECTION -->
+  <section class="section" id="section-history">
+    <div class="history-header">
+      <h2>Payment History</h2>
+      <button class="refresh-btn" onclick="loadHistory()">↻ Refresh</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Payments</div>
+        <div class="stat-value blue" id="stat-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Amount</div>
+        <div class="stat-value green" id="stat-total">₹0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last Payment</div>
+        <div class="stat-value" id="stat-last" style="font-size:14px; color: var(--muted);">—</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Payment ID</th>
+            <th>Customer</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody">
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <div class="empty-icon">💳</div>
+                <p>No payments yet. Make your first payment!</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SETUP GUIDE SECTION -->
+  <section class="section" id="section-setup">
+    <h2 style="font-family: var(--font-head); font-size: 28px; font-weight: 700; margin-bottom: 8px;">Setup Guide</h2>
+    <p style="color: var(--muted); margin-bottom: 28px; font-size: 15px;">Follow these steps to make real payments</p>
+
+    <div class="guide-grid">
+      <div class="guide-card">
+        <div class="guide-num">1</div>
+        <div class="guide-content">
+          <h3>Install dependencies</h3>
+          <p>Clone/download the project folder, then install packages:</p>
+          <div class="code">npm install</div>
+        </div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-num">2</div>
+        <div class="guide-content">
+          <h3>Get Razorpay API Keys</h3>
+          <p>Sign up at Razorpay → Dashboard → Settings → API Keys → Generate Test Key. Copy your Key ID and Secret.</p>
+          <a href="https://razorpay.com" target="_blank" class="guide-link">→ Go to razorpay.com</a>
+        </div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-num">3</div>
+        <div class="guide-content">
+          <h3>Add keys to .env file</h3>
+          <p>Open the <code style="color: #8ba4ff">.env</code> file in the project and replace the placeholder keys:</p>
+          <div class="code">RAZORPAY_KEY_ID=rzp_test_YOUR_KEY_HERE<br/>RAZORPAY_KEY_SECRET=YOUR_SECRET_HERE</div>
+        </div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-num">4</div>
+        <div class="guide-content">
+          <h3>Run the server</h3>
+          <p>Start the app locally:</p>
+          <div class="code">npm start<br/><br/># For auto-reload during development:<br/>npm run dev</div>
+        </div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-num">5</div>
+        <div class="guide-content">
+          <h3>Deploy to Railway (Free Hosting)</h3>
+          <p>Push your project to GitHub, then connect it to Railway for free hosting. Set your .env variables in Railway's dashboard.</p>
+          <div class="code">git init<br/>git add .<br/>git commit -m "razorpay app"<br/>git push origin main<br/><br/># Then connect at railway.app</div>
+          <a href="https://railway.app" target="_blank" class="guide-link">→ Go to railway.app</a>
+        </div>
+      </div>
+
+      <div class="guide-card">
+        <div class="guide-num">6</div>
+        <div class="guide-content">
+          <h3>Test payments (use these card numbers)</h3>
+          <p>Use Razorpay test mode credentials:</p>
+          <div class="code">Card: 4111 1111 1111 1111<br/>Expiry: Any future date<br/>CVV: Any 3 digits<br/>OTP: 1234<br/><br/>UPI: success@razorpay (test UPI ID)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- TOAST -->
+<div id="toast">
+  <div class="toast-icon">✓</div>
+  <div>
+    <div class="toast-title" id="toast-title">Payment Successful!</div>
+    <div class="toast-sub" id="toast-sub">Payment verified and saved</div>
+  </div>
+</div>
+
+<!-- RAZORPAY SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+  // ── Tab navigation
+  function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    event.target.classList.add('active');
+    if (name === 'history') loadHistory();
+  }
+
+  function setAmount(val) {
+    document.getElementById('pay-amount').value = val;
+  }
+
+  // ── Check server health
+  async function checkHealth() {
+    try {
+      const res = await fetch('/health');
+      const data = await res.json();
+      const dot = document.getElementById('status-dot');
+      const txt = document.getElementById('status-text');
+      if (data.razorpay_configured) {
+        dot.style.background = '#22c55e';
+        txt.textContent = 'Live';
+      } else {
+        dot.style.background = '#f59e0b';
+        txt.textContent = 'Add API Keys';
+      }
+    } catch {
+      document.getElementById('status-dot').style.background = '#ef4444';
+      document.getElementById('status-text').textContent = 'Server offline';
+    }
+  }
+
+  // ── Initiate payment
+  async function initiatePayment() {
+    const name = document.getElementById('payer-name').value.trim() || 'Customer';
+    const description = document.getElementById('pay-desc').value.trim() || 'Payment';
+    const amount = parseFloat(document.getElementById('pay-amount').value);
+
+    if (!amount || amount < 1) {
+      alert('Please enter an amount of at least ₹1');
+      return;
+    }
+
+    const btn = document.getElementById('pay-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating order...';
+
+    try {
+      // Step 1: Create order on backend
+      const res = await fetch('/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, name, description })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        alert('Error: ' + data.error + '\n\nPlease add your Razorpay keys to .env file.');
+        btn.disabled = false;
+        btn.textContent = 'Show UPI QR Code to Pay';
+        return;
+      }
+
+      // Step 2: Open Razorpay checkout — UPI QR only
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        order_id: data.order_id,
+        name: 'PayFlow Demo',
+        description: description,
+        prefill: { name: name },
+        theme: { color: '#4f6ef7' },
+
+        // ── Force UPI QR as the default & only method shown ──
+        config: {
+          display: {
+            blocks: {
+              upi_block: {
+                name: 'Pay via UPI QR',
+                instruments: [
+                  { method: 'upi', flows: ['qr'] }
+                ]
+              }
+            },
+            sequence: ['block.upi_block'],
+            preferences: { show_default_blocks: false }
+          }
+        },
+
+        handler: async function(response) {
+          // Step 3: Verify on backend
+          const verifyRes = await fetch('/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              amount: data.amount,
+              name, description
+            })
+          });
+          const verifyData = await verifyRes.json();
+
+          if (verifyData.success) {
+            showToast('Payment Successful! ✓', `₹${amount} — ID: ${response.razorpay_payment_id.slice(-8)}`);
+            document.getElementById('pay-amount').value = '';
+          } else {
+            alert('Payment verification failed!');
+          }
+        },
+
+        modal: {
+          ondismiss: function() {
+            btn.disabled = false;
+            btn.textContent = 'Show UPI QR Code to Pay';
+          }
+        }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', function(response) {
+        alert('Payment failed: ' + response.error.description);
+        btn.disabled = false;
+        btn.textContent = 'Show UPI QR Code to Pay';
+      });
+      rzp.open();
+
+    } catch (err) {
+      alert('Connection error. Is the server running?');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Show UPI QR Code to Pay';
+  }
+
+  // ── Load payment history
+  async function loadHistory() {
+    try {
+      const res = await fetch('/payment-history');
+      const data = await res.json();
+      const tbody = document.getElementById('history-tbody');
+      const payments = data.payments;
+
+      // Update stats
+      document.getElementById('stat-count').textContent = payments.length;
+      const total = payments.reduce((sum, p) => sum + p.amount, 0);
+      document.getElementById('stat-total').textContent = '₹' + total.toLocaleString('en-IN');
+      document.getElementById('stat-last').textContent = payments.length > 0
+        ? new Date(payments[0].timestamp).toLocaleDateString('en-IN')
+        : '—';
+
+      if (payments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💳</div><p>No payments yet. Make your first payment!</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = payments.map(p => `
+        <tr>
+          <td class="td-id">${p.payment_id.slice(0, 18)}...</td>
+          <td class="td-name">${p.name}</td>
+          <td class="td-desc">${p.description}</td>
+          <td class="td-amount">₹${p.amount.toLocaleString('en-IN')}</td>
+          <td><span class="badge-success">● ${p.status}</span></td>
+          <td class="td-date">${new Date(p.timestamp).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'})}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      document.getElementById('history-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--muted);">Could not load history</td></tr>';
+    }
+  }
+
+  // ── Toast notification
+  function showToast(title, sub) {
+    document.getElementById('toast-title').textContent = title;
+    document.getElementById('toast-sub').textContent = sub;
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  // Init
+  checkHealth();
+</script>
+</body>
+</html>
